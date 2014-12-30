@@ -18,6 +18,8 @@ QMAKE_TARGET_DESCRIPTION = Swing Tech One toolset
 QMAKE_TARGET_COPYRIGHT = LGPL v2.1
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    Widgets/codeeditor.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    Widgets/codeeditor.h

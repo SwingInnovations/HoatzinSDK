@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QStackedLayout>
 
 class MainWindow : public QMainWindow
 {
