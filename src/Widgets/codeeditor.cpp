@@ -78,12 +78,17 @@ void CodeCanvas::paintEvent(QPaintEvent *e){
     QTextBlock prevBlock = (blockNumber > 0)? this->document()->findBlockByNumber(blockNumber-1) : 0;
     int translate_y = (blockNumber > 0) ? this->verticalScrollBar()->sliderPosition() : 0;
     int top = this->viewport()->geometry().top();
-
-    int addition_margin;
-    if(blockNumber == 0){
-        addition_margin = (int)this->document()->documentMargin() - 1 - this->verticalScrollBar()->sliderPosition();
-    }else{
-        addition_margin = (int)this->document()->documentLayout()->blockBoundingRect(prevBlock).translated(0, translate_y).intersects(this->viewport()->geometry()).height();
+    int bottom = top + (int)this->document()->documentLayout()->blockBoundingRect(block).height();
+    while(block.isValid() && top <= e->rect().top()){
+        if(block.isVisible() && bottom >= e->rect().top()){
+            QString number = QString::number(blockNumber + 1);
+            painter.setPen(Qt::black);
+            painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(), Qt::AlignRight, number);
+        }
+        block = block.next();
+        top = bottom;
+        bottom = top + (int)this->document()->documentLayout()->blockBoundingRect(block).height();
+        blockNumber++;
     }
 }
 
