@@ -4,12 +4,24 @@ CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
 {
     codeCanvas = new CodeCanvas(this);
     QVBoxLayout* centerLayout = new QVBoxLayout;
+
     menuBar = new QMenuBar(this);
     QMenu *fileMenu = menuBar->addMenu("&File");
+    QMenu *editMenu = menuBar->addMenu("&Edit");
     QMenu *languageMenu = menuBar->addMenu("&Language");
+    QMenu *panelMenu = menuBar->addMenu("&Panel");
+
+    mUndoAct = new QAction("&Undo",this);
+    mRedoAct = new QAction("&Redo", this);
+    mCopyAct = new QAction("&Cut", this);
+    mCutAct = new QAction("&Cut", this);
+    mPasteAct = new QAction("&Paste", this);
+
     QAction* cppLangAct = new QAction("&C++", this);
     QAction* luaLangAct = new QAction("&Lua", this);
     QAction* glslLangAct = new QAction("&GLSL", this);
+
+    //QComboBox* documentSelect = new QComboBox(this);
 
     languageMenu->addAction(cppLangAct);
     languageMenu->addAction(luaLangAct);
@@ -40,6 +52,7 @@ CodeCanvas::CodeCanvas(QWidget* parent) : QTextEdit(parent){
     connect(this, SIGNAL(textChanged()), SLOT(updateLineNumberArea()));
     connect(this, SIGNAL(cursorPositionChanged()), SLOT(updateLineNumberArea()));
     updateLineNumberAreaWidth(0);
+    highlightLine();
 }
 
 int CodeCanvas::lineNumberAreaWidth(){
@@ -80,6 +93,7 @@ void CodeCanvas::updateLineNumberArea(){
     if(firstBlockID == 0 || this->textCursor().block().blockNumber() == firstBlockID -1){
         this->verticalScrollBar()->setSliderPosition(dY-this->document()->documentMargin());
     }
+    highlightLine();
 }
 
 void CodeCanvas::lineNumberAreaPaintEvent(QPaintEvent *event){
@@ -216,6 +230,78 @@ CPPHighLighter::CPPHighLighter(QTextDocument *parent) : QSyntaxHighlighter(paren
 }
 
 void CPPHighLighter::highlightBlock(const QString &text){
+    foreach(const HighlightRule &rule, highlightRules){
+        QRegExp expression(rule.pattern);
+        int index = expression.indexIn(text);
+        while(index > 0){
+            int length = expression.matchedLength();
+            setFormat(index, length, rule.format);
+            index = expression.indexIn(text, index + length);
+        }
+        setCurrentBlockState(0);
+        int startIndex = 0;
+        if(previousBlockState() != 1){
+            startIndex = commentStartExpression.indexIn(text);
+        }
+
+        while(startIndex >= 0){
+            int endIndex = commentEndExpression.indexIn(text, startIndex);
+            int commentLength;
+            if(endIndex == -1){
+                setCurrentBlockState(1);
+                commentLength = text.length() - startIndex;
+            }else{
+                commentLength = endIndex - startIndex + commentEndExpression.matchedLength();
+            }
+
+            setFormat(startIndex, commentLength, multiLineCommentFormat);
+            startIndex = commentStartExpression.indexIn(text, startIndex + commentLength);
+        }
+    }
+}
+
+LUAHighLighter::LUAHighLighter(QTextDocument *parent) : QSyntaxHighlighter(parent)
+{
+
+}
+
+void LUAHighLighter::highlightBlock(const QString &text){
+    foreach(const HighlightRule &rule, highlightRules){
+        QRegExp expression(rule.pattern);
+        int index = expression.indexIn(text);
+        while(index > 0){
+            int length = expression.matchedLength();
+            setFormat(index, length, rule.format);
+            index = expression.indexIn(text, index + length);
+        }
+        setCurrentBlockState(0);
+        int startIndex = 0;
+        if(previousBlockState() != 1){
+            startIndex = commentStartExpression.indexIn(text);
+        }
+
+        while(startIndex >= 0){
+            int endIndex = commentEndExpression.indexIn(text, startIndex);
+            int commentLength;
+            if(endIndex == -1){
+                setCurrentBlockState(1);
+                commentLength = text.length() - startIndex;
+            }else{
+                commentLength = endIndex - startIndex + commentEndExpression.matchedLength();
+            }
+
+            setFormat(startIndex, commentLength, multiLineCommentFormat);
+            startIndex = commentStartExpression.indexIn(text, startIndex + commentLength);
+        }
+    }
+}
+
+GLSLHighLighter::GLSLHighLighter(QTextDocument *parent) : QSyntaxHighlighter(parent)
+{
+
+}
+
+void GLSLHighLighter::highlightBlock(const QString &text){
     foreach(const HighlightRule &rule, highlightRules){
         QRegExp expression(rule.pattern);
         int index = expression.indexIn(text);

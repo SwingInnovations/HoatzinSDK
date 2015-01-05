@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QMenuBar>
 #include <QMenu>
+#include <QComboBox>
 
 class CodeCanvas : public QTextEdit{
     Q_OBJECT
@@ -123,9 +124,17 @@ class CodeEditor : public QWidget
 public:
     CodeEditor(QWidget* parent = 0);
     ~CodeEditor();
+protected:
+
 private:
     CodeCanvas* codeCanvas;
     QMenuBar* menuBar;
+    QAction* mUndoAct;
+    QAction* mRedoAct;
+    QAction* mCopyAct;
+    QAction* mCutAct;
+    QAction* mPasteAct;
+    QAction* mRefractorAct;
 };
 
 #endif // CODEEDITOR_H
