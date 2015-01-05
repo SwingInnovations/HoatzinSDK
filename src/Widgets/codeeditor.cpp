@@ -1,8 +1,23 @@
 #include "codeeditor.h"
 
-CodeEditor::CodeEditor()
+CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
 {
+    codeCanvas = new CodeCanvas(this);
+    QVBoxLayout* centerLayout = new QVBoxLayout;
+    menuBar = new QMenuBar(this);
+    QMenu *fileMenu = menuBar->addMenu("&File");
+    QMenu *languageMenu = menuBar->addMenu("&Language");
+    QAction* cppLangAct = new QAction("&C++", this);
+    QAction* luaLangAct = new QAction("&Lua", this);
+    QAction* glslLangAct = new QAction("&GLSL", this);
 
+    languageMenu->addAction(cppLangAct);
+    languageMenu->addAction(luaLangAct);
+    languageMenu->addAction(glslLangAct);
+
+    centerLayout->addWidget(menuBar);
+    centerLayout->addWidget(codeCanvas);
+    setLayout(centerLayout);
 }
 
 CodeEditor::~CodeEditor()
@@ -10,7 +25,7 @@ CodeEditor::~CodeEditor()
 
 }
 
-LineNumberArea::LineNumberArea(QTextEdit *editor) : QWidget(editor){
+LineNumberArea::LineNumberArea(CodeCanvas *editor) : QWidget(editor){
     codeEditor = editor;
 }
 
@@ -34,7 +49,6 @@ int CodeCanvas::lineNumberAreaWidth(){
         max /= 19;
         digits++;
     }
-
     int space = 13 + fontMetrics().width(QLatin1Char('9'))*digits;
     return space;
 }
@@ -68,14 +82,52 @@ void CodeCanvas::updateLineNumberArea(){
     }
 }
 
-void CodeCanvas::paintEvent(QPaintEvent *e){
+void CodeCanvas::lineNumberAreaPaintEvent(QPaintEvent *event){
+       this->verticalScrollBar()->setSliderPosition(this->verticalScrollBar()->sliderPosition());
+    QPainter painter(lineNumberArea);
+    painter.fillRect(event->rect(), Qt::darkGray);
+    int blockNumber = getFirstVisibleBlockID();
+    QTextBlock block = document()->findBlockByNumber(blockNumber);
+    int offset = 0;
+    if(blockNumber > 0) offset = this->verticalScrollBar()->sliderPosition(); else offset = 0;
+    int top = (int)document()->documentLayout()->blockBoundingRect(block).translated(QPoint(0, -offset)).top();
+    int bottom = top + (int)document()->documentLayout()->blockBoundingRect(block).height();
+    while(block.isValid() && top <= event->rect().bottom()){
+        if(block.isVisible() && bottom >= event->rect().top()){
+            QString number = QString::number(blockNumber+1);
+            painter.setPen(Qt::black);
+            painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(), Qt::AlignRight, number);
+        }
+        block = block.next();
+        top = bottom;
+        bottom = top + (int)document()->documentLayout()->blockBoundingRect(block).height();
+        blockNumber++;
+    }
+}
+
+void CodeCanvas::highlightLine(){
+    QList<QTextEdit::ExtraSelection> extraSelection;
+    if(!isReadOnly()){
+        QTextEdit::ExtraSelection selection;
+        QColor lineColor = QColor(Qt::yellow).lighter(160);
+
+        selection.format.setBackground(lineColor);
+        selection.format.setProperty(QTextFormat::FullWidthSelection, true);
+        selection.cursor = textCursor();
+        selection.cursor.clearSelection();
+        extraSelection.append(selection);
+    }
+    setExtraSelections(extraSelection);
+}
+
+/*oid CodeCanvas::paintEvent(QPaintEvent *e){
     this->verticalScrollBar()->setSliderPosition(this->verticalScrollBar()->sliderPosition());
 
     QPainter painter(lineNumberArea);
     painter.fillRect(e->rect(), Qt::lightGray);
     int blockNumber = this->getFirstVisibleBlockID();
     QTextBlock block = this->document()->findBlockByNumber(blockNumber);
-    QTextBlock prevBlock = (blockNumber > 0)? this->document()->findBlockByNumber(blockNumber-1) : 0;
+    //QTextBlock prevBlock = (blockNumber > 0)? this->document()->findBlockByNumber(blockNumber-1).position() : 0;
     int translate_y = (blockNumber > 0) ? this->verticalScrollBar()->sliderPosition() : 0;
     int top = this->viewport()->geometry().top();
     int bottom = top + (int)this->document()->documentLayout()->blockBoundingRect(block).height();
@@ -90,7 +142,7 @@ void CodeCanvas::paintEvent(QPaintEvent *e){
         bottom = top + (int)this->document()->documentLayout()->blockBoundingRect(block).height();
         blockNumber++;
     }
-}
+}*/
 
 void CodeCanvas::resizeEvent(QResizeEvent *e){
     QTextEdit::resizeEvent(e);
@@ -113,3 +165,84 @@ int CodeCanvas::getFirstVisibleBlockID(){
     }
     return 0;
 }
+
+CPPHighLighter::CPPHighLighter(QTextDocument *parent) : QSyntaxHighlighter(parent){
+    HighlightRule rule;
+    keywordFormat.setForeground(Qt::darkBlue);
+    keywordFormat.setFontWeight(QFont::Bold);
+    QStringList keywordPatterns;
+    keywordPatterns << "\\bchar\\b" << "\\bclass\\b" << "\\bconst\\b"
+                    << "\\bdouble\\b" << "\\benum\\b" << "\\bexplicit\\b"
+                    << "\\bfriend\\b" << "\\binline\\b" << "\\bint\\b"
+                    << "\\blong\\b" << "\\bnamespace\\b" << "\\boperator\\b"
+                    << "\\bprivate\\b" << "\\bprotected\\b" << "\\bpublic\\b"
+                    << "\\bshort\\b" << "\\bsignals\\b" << "\\bsigned\\b"
+                    << "\\bslots\\b" << "\\bstatic\\b" << "\\bstruct\\b"
+                    << "\\btemplate\\b" << "\\btypedef\\b" << "\\btypename\\b"
+                    << "\\bunion\\b" << "\\bunsigned\\b" << "\\bvirtual\\b"
+                    << "\\bvoid\\b" << "\\bvolatile\\b";
+    foreach(const QString& pattern, keywordPatterns){
+        rule.pattern = QRegExp(pattern);
+        rule.format = keywordFormat;
+        highlightRules.append(rule);
+    }
+
+    classFormat.setFontWeight(QFont::Bold);
+    classFormat.setForeground(Qt::darkMagenta);
+    rule.pattern = QRegExp("\\bQ[A-Za-z]+\\b");
+    rule.format = classFormat;
+    highlightRules.append(rule);
+
+    quotationFormat.setForeground(Qt::darkGreen);
+    rule.pattern = QRegExp("\".*\"");
+    rule.format = quotationFormat;
+    highlightRules.append(rule);
+
+   functionFormat.setFontItalic(true);
+   functionFormat.setForeground(Qt::blue);
+   rule.pattern = QRegExp("\\b[A-za-z0-9_]+(?=\\()");
+   rule.format = functionFormat;
+   highlightRules.append(rule);
+
+   singleLineCommentFormat.setForeground(Qt::red);
+   rule.pattern = QRegExp("//[^\n]*");
+   rule.format = singleLineCommentFormat;
+   highlightRules.append(rule);
+
+   multiLineCommentFormat.setForeground(Qt::red);
+
+   commentStartExpression = QRegExp("/\\*");
+   commentEndExpression = QRegExp("\\*/");
+}
+
+void CPPHighLighter::highlightBlock(const QString &text){
+    foreach(const HighlightRule &rule, highlightRules){
+        QRegExp expression(rule.pattern);
+        int index = expression.indexIn(text);
+        while(index > 0){
+            int length = expression.matchedLength();
+            setFormat(index, length, rule.format);
+            index = expression.indexIn(text, index + length);
+        }
+        setCurrentBlockState(0);
+        int startIndex = 0;
+        if(previousBlockState() != 1){
+            startIndex = commentStartExpression.indexIn(text);
+        }
+
+        while(startIndex >= 0){
+            int endIndex = commentEndExpression.indexIn(text, startIndex);
+            int commentLength;
+            if(endIndex == -1){
+                setCurrentBlockState(1);
+                commentLength = text.length() - startIndex;
+            }else{
+                commentLength = endIndex - startIndex + commentEndExpression.matchedLength();
+            }
+
+            setFormat(startIndex, commentLength, multiLineCommentFormat);
+            startIndex = commentStartExpression.indexIn(text, startIndex + commentLength);
+        }
+    }
+}
+
