@@ -12,6 +12,7 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QComboBox>
+#include <QWidgetAction>
 
 class CodeCanvas : public QTextEdit{
     Q_OBJECT
@@ -21,8 +22,23 @@ public:
     int getFirstVisibleBlockID();
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     int lineNumberAreaWidth();
+signals:
+    void undoTriggered();
+    void redoTriggered();
+    void cutTriggered();
+    void copyTriggered();
+    void pasteTriggered();
+    void refractorTriggered();
+private slots:
+    void updateUndo(){emit undoTriggered();}
+    void updateRedo(){emit redoTriggered();}
+    void updateCut(){emit cutTriggered();}
+    void updateCopy(){emit copyTriggered();}
+    void updatePaste(){emit pasteTriggered();}
+    void updateRefractor(){emit refractorTriggered();}
 protected:
     void resizeEvent(QResizeEvent *e);
+    void contextMenuEvent(QContextMenuEvent *e);
 private slots:
     void updateLineNumberAreaWidth(int newBlockCount);
     void updateLineNumberArea(QRectF);
@@ -30,6 +46,12 @@ private slots:
     void updateLineNumberArea();
 private:
     QWidget *lineNumberArea;
+    QAction *mUndoAct;
+    QAction *mRedoAct;
+    QAction *mCutAct;
+    QAction *mCopyAct;
+    QAction *mPasteAct;
+    QAction *mRefractorAct;
 };
 
 class LineNumberArea : public QWidget{
@@ -124,17 +146,25 @@ class CodeEditor : public QWidget
 public:
     CodeEditor(QWidget* parent = 0);
     ~CodeEditor();
-protected:
-
+private slots:
+    void selectCPP(bool);
+    void selectLUA(bool);
+    void selectGLSL(bool);
 private:
     CodeCanvas* codeCanvas;
+    QVector<QString> mFilesOpen;
     QMenuBar* menuBar;
+    QComboBox* mFileComboBox;
     QAction* mUndoAct;
     QAction* mRedoAct;
     QAction* mCopyAct;
     QAction* mCutAct;
     QAction* mPasteAct;
     QAction* mRefractorAct;
+
+    QAction* cppLangAct;
+    QAction* luaLangAct;
+    QAction* glslLangAct;
 };
 
 #endif // CODEEDITOR_H

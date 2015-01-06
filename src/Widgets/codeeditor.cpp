@@ -3,6 +3,7 @@
 CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
 {
     codeCanvas = new CodeCanvas(this);
+    codeCanvas->setTabStopWidth(40);
     QVBoxLayout* centerLayout = new QVBoxLayout;
 
     menuBar = new QMenuBar(this);
@@ -10,26 +11,70 @@ CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
     QMenu *editMenu = menuBar->addMenu("&Edit");
     QMenu *languageMenu = menuBar->addMenu("&Language");
     QMenu *panelMenu = menuBar->addMenu("&Panel");
+    menuBar->addSeparator();
+
+    mFileComboBox = new QComboBox(menuBar);
+//    QWidgetAction* comboWidget = new QWidgetAction(menuBar);
+//    comboWidget->setDefaultWidget(mFileComboBox);
+    menuBar->setCornerWidget(mFileComboBox, Qt::TopRightCorner);
 
     mUndoAct = new QAction("&Undo",this);
     mRedoAct = new QAction("&Redo", this);
     mCopyAct = new QAction("&Cut", this);
     mCutAct = new QAction("&Cut", this);
     mPasteAct = new QAction("&Paste", this);
+    mRefractorAct = new QAction("&Refractor", this);
 
-    QAction* cppLangAct = new QAction("&C++", this);
-    QAction* luaLangAct = new QAction("&Lua", this);
-    QAction* glslLangAct = new QAction("&GLSL", this);
+    cppLangAct = new QAction("&C++", this);
+    cppLangAct->setCheckable(true);
+    cppLangAct->setChecked(true);
+    luaLangAct = new QAction("&Lua", this);
+    luaLangAct->setCheckable(true);
+    glslLangAct = new QAction("&GLSL", this);
+    glslLangAct->setCheckable(true);
 
-    //QComboBox* documentSelect = new QComboBox(this);
+    editMenu->addAction(mUndoAct);
+    editMenu->addAction(mRedoAct);
+    editMenu->addSeparator();
+    editMenu->addAction(mCutAct);
+    editMenu->addAction(mCopyAct);
+    editMenu->addAction(mPasteAct);
+    editMenu->addSeparator();
+    editMenu->addAction(mRefractorAct);
 
     languageMenu->addAction(cppLangAct);
     languageMenu->addAction(luaLangAct);
     languageMenu->addAction(glslLangAct);
 
+    panelMenu->addMenu("&Layouts");
+    panelMenu->addSeparator();
+    //Add panel Widgets
+
     centerLayout->addWidget(menuBar);
     centerLayout->addWidget(codeCanvas);
     setLayout(centerLayout);
+
+    connect(cppLangAct, SIGNAL(triggered(bool)), SLOT(selectCPP(bool)));
+    connect(luaLangAct, SIGNAL(triggered(bool)), SLOT(selectLUA(bool)));
+    connect(glslLangAct, SIGNAL(triggered(bool)), SLOT(selectGLSL(bool)));
+}
+
+void CodeEditor::selectCPP(bool val){
+    cppLangAct->setChecked(val);
+    luaLangAct->setChecked(!val);
+    glslLangAct->setChecked(!val);
+}
+
+void CodeEditor::selectGLSL(bool val){
+    cppLangAct->setChecked(!val);
+    luaLangAct->setChecked(!val);
+    glslLangAct->setChecked(val);
+}
+
+void CodeEditor::selectLUA(bool val){
+    cppLangAct->setChecked(!val);
+    luaLangAct->setChecked(val);
+    glslLangAct->setChecked(!val);
 }
 
 CodeEditor::~CodeEditor()
@@ -47,12 +92,40 @@ QSize LineNumberArea::sizeHint() const{
 
 CodeCanvas::CodeCanvas(QWidget* parent) : QTextEdit(parent){
     lineNumberArea = new LineNumberArea(this);
+    mUndoAct = new QAction("&Undo", this);
+    mRedoAct = new QAction("&Redo", this);
+    mCopyAct = new QAction("&Copy", this);
+    mCutAct = new QAction("&Cut", this);
+    mPasteAct = new QAction("&Paste", this);
+    mRefractorAct = new QAction("&Refractor", this);
+
     connect(this->document(), SIGNAL(blockCountChanged(int)), SLOT(updateLineNumberAreaWidth(int)));
     connect(this->verticalScrollBar(), SIGNAL(valueChanged(int)), SLOT(updateLineNumberArea(int)));
     connect(this, SIGNAL(textChanged()), SLOT(updateLineNumberArea()));
     connect(this, SIGNAL(cursorPositionChanged()), SLOT(updateLineNumberArea()));
+    connect(mUndoAct, SIGNAL(triggered()), SLOT(updateUndo()));
+    connect(mRedoAct, SIGNAL(triggered()), SLOT(updateRedo()));
+    connect(mCopyAct, SIGNAL(triggered()), SLOT(updateCopy()));
+    connect(mCutAct, SIGNAL(triggered()), SLOT(updateCut()));
+    connect(mPasteAct, SIGNAL(triggered()), SLOT(updatePaste()));
+    connect(mRefractorAct, SIGNAL(triggered()), SLOT(updateRefractor()));
+
     updateLineNumberAreaWidth(0);
     highlightLine();
+}
+
+void CodeCanvas::contextMenuEvent(QContextMenuEvent *e){
+    QMenu* menu = new QMenu(this);
+    menu->addAction(mUndoAct);
+    menu->addAction(mRedoAct);
+    menu->addSeparator();
+    menu->addAction(mCutAct);
+    menu->addAction(mCopyAct);
+    menu->addAction(mPasteAct);
+    menu->addSeparator();
+    menu->addAction(mRefractorAct);
+    menu->exec(viewport()->mapToGlobal(e->pos()));
+    delete menu;
 }
 
 int CodeCanvas::lineNumberAreaWidth(){
@@ -133,30 +206,6 @@ void CodeCanvas::highlightLine(){
     }
     setExtraSelections(extraSelection);
 }
-
-/*oid CodeCanvas::paintEvent(QPaintEvent *e){
-    this->verticalScrollBar()->setSliderPosition(this->verticalScrollBar()->sliderPosition());
-
-    QPainter painter(lineNumberArea);
-    painter.fillRect(e->rect(), Qt::lightGray);
-    int blockNumber = this->getFirstVisibleBlockID();
-    QTextBlock block = this->document()->findBlockByNumber(blockNumber);
-    //QTextBlock prevBlock = (blockNumber > 0)? this->document()->findBlockByNumber(blockNumber-1).position() : 0;
-    int translate_y = (blockNumber > 0) ? this->verticalScrollBar()->sliderPosition() : 0;
-    int top = this->viewport()->geometry().top();
-    int bottom = top + (int)this->document()->documentLayout()->blockBoundingRect(block).height();
-    while(block.isValid() && top <= e->rect().top()){
-        if(block.isVisible() && bottom >= e->rect().top()){
-            QString number = QString::number(blockNumber + 1);
-            painter.setPen(Qt::black);
-            painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(), Qt::AlignRight, number);
-        }
-        block = block.next();
-        top = bottom;
-        bottom = top + (int)this->document()->documentLayout()->blockBoundingRect(block).height();
-        blockNumber++;
-    }
-}*/
 
 void CodeCanvas::resizeEvent(QResizeEvent *e){
     QTextEdit::resizeEvent(e);

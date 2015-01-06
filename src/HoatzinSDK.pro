@@ -32,4 +32,5 @@ HEADERS  += mainwindow.h \
     Math/Vector.h \
     Widgets/sceneview.h \
     Widgets/outliner.h \
-    Widgets/timeline.h
+    Widgets/timeline.h \
+    overloads.h
