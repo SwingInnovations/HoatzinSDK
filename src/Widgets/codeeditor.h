@@ -146,6 +146,8 @@ class CodeEditor : public QWidget
 public:
     CodeEditor(QWidget* parent = 0);
     ~CodeEditor();
+signals:
+
 private slots:
     void selectCPP(bool);
     void selectLUA(bool);
@@ -165,6 +167,11 @@ private:
     QAction* cppLangAct;
     QAction* luaLangAct;
     QAction* glslLangAct;
+
+    QAction* mCodeEditorWdgt;
+    QAction* mSceneViewerWgdt;
+    QAction* mTimelineWgdt;
+
 };
 
 #endif // CODEEDITOR_H

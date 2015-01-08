@@ -33,6 +33,14 @@ CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
     glslLangAct = new QAction("&GLSL", this);
     glslLangAct->setCheckable(true);
 
+    mCodeEditorWdgt = new QAction("&Text Editor", this);
+    mSceneViewerWgdt = new QAction("&3D View", this);
+    mTimelineWgdt = new QAction("&Timeline", this);
+
+    QAction* singleViewAct = new QAction("Single", this);
+    QAction* splitHorizonalAct = new QAction("Split Horizontal", this);
+    QAction* splitVerticalAct = new QAction("Split Vertical", this);
+
     editMenu->addAction(mUndoAct);
     editMenu->addAction(mRedoAct);
     editMenu->addSeparator();
@@ -46,9 +54,14 @@ CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
     languageMenu->addAction(luaLangAct);
     languageMenu->addAction(glslLangAct);
 
-    panelMenu->addMenu("&Layouts");
+    QMenu* layoutMenu = panelMenu->addMenu("&Layouts");
+    layoutMenu->addAction(singleViewAct);
+    layoutMenu->addAction(splitHorizonalAct);
+    layoutMenu->addAction(splitVerticalAct);
     panelMenu->addSeparator();
-    //Add panel Widgets
+    panelMenu->addAction(mCodeEditorWdgt);
+    panelMenu->addAction(mSceneViewerWgdt);
+    panelMenu->addAction(mTimelineWgdt);
 
     centerLayout->addWidget(menuBar);
     centerLayout->addWidget(codeCanvas);
@@ -57,6 +70,12 @@ CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
     connect(cppLangAct, SIGNAL(triggered(bool)), SLOT(selectCPP(bool)));
     connect(luaLangAct, SIGNAL(triggered(bool)), SLOT(selectLUA(bool)));
     connect(glslLangAct, SIGNAL(triggered(bool)), SLOT(selectGLSL(bool)));
+    connect(mCopyAct, SIGNAL(triggered()), codeCanvas, SLOT(copy()));
+    connect(mCutAct, SIGNAL(triggered()), codeCanvas, SLOT(cut()));
+    connect(mPasteAct, SIGNAL(triggered()), codeCanvas, SLOT(paste()));
+    connect(codeCanvas, SIGNAL(copyTriggered()), codeCanvas, SLOT(copy()));
+    connect(codeCanvas, SIGNAL(cutTriggered()), codeCanvas, SLOT(cut()));
+    connect(codeCanvas, SIGNAL(pasteTriggered()), codeCanvas, SLOT(paste()));
 }
 
 void CodeEditor::selectCPP(bool val){

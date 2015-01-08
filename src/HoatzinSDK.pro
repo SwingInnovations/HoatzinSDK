@@ -23,7 +23,8 @@ SOURCES += main.cpp\
         Math/Vector.cpp \
     Widgets/sceneview.cpp \
     Widgets/outliner.cpp \
-    Widgets/timeline.cpp
+    Widgets/timeline.cpp \
+    Widgets/sw_workspace.cpp
 
 HEADERS  += mainwindow.h \
     Widgets/codeeditor.h \
@@ -33,4 +34,5 @@ HEADERS  += mainwindow.h \
     Widgets/sceneview.h \
     Widgets/outliner.h \
     Widgets/timeline.h \
-    overloads.h
+    overloads.h \
+    Widgets/sw_workspace.h
