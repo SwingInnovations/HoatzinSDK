@@ -35,4 +35,5 @@ HEADERS  += mainwindow.h \
     Widgets/outliner.h \
     Widgets/timeline.h \
     overloads.h \
-    Widgets/sw_workspace.h
+    Widgets/sw_workspace.h \
+    sw_base.h
