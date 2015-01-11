@@ -3,7 +3,9 @@
 CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
 {
     codeCanvas = new CodeCanvas(this);
-    codeCanvas->setTabStopWidth(40);
+    codeCanvas->setTabStopWidth(10);
+    codeCanvas->setFont(QFont("Consolas"));
+    codeCanvas->setLineWrapMode(QTextEdit::NoWrap);
     QVBoxLayout* centerLayout = new QVBoxLayout;
 
     menuBar = new QMenuBar(this);
@@ -63,9 +65,12 @@ CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
     panelMenu->addAction(mSceneViewerWgdt);
     panelMenu->addAction(mTimelineWgdt);
 
+    centerLayout->setContentsMargins(0, 0, 0, 0);
     centerLayout->addWidget(menuBar);
     centerLayout->addWidget(codeCanvas);
     setLayout(centerLayout);
+
+    masterHighlight = new CPPHighLighter(codeCanvas->document());
 
     connect(cppLangAct, SIGNAL(triggered(bool)), SLOT(selectCPP(bool)));
     connect(luaLangAct, SIGNAL(triggered(bool)), SLOT(selectLUA(bool)));
@@ -76,6 +81,9 @@ CodeEditor::CodeEditor(QWidget* parent) : QWidget(parent)
     connect(codeCanvas, SIGNAL(copyTriggered()), codeCanvas, SLOT(copy()));
     connect(codeCanvas, SIGNAL(cutTriggered()), codeCanvas, SLOT(cut()));
     connect(codeCanvas, SIGNAL(pasteTriggered()), codeCanvas, SLOT(paste()));
+    connect(singleViewAct, SIGNAL(triggered()), SLOT(singleSelected()));
+    connect(splitHorizonalAct, SIGNAL(triggered()), SLOT(splitHorizSelected()));
+    connect(splitVerticalAct, SIGNAL(triggered()), SLOT(splitVertiSelected()));
 }
 
 void CodeEditor::selectCPP(bool val){
@@ -94,6 +102,18 @@ void CodeEditor::selectLUA(bool val){
     cppLangAct->setChecked(!val);
     luaLangAct->setChecked(val);
     glslLangAct->setChecked(!val);
+}
+
+void CodeEditor::singleSelected(){
+    emit singleViewTriggered(0);
+}
+
+void CodeEditor::splitHorizSelected(){
+    emit splitHorizontalTriggered(0);
+}
+
+void CodeEditor::splitVertiSelected(){
+    emit splitVerticalTriggered(0);
 }
 
 CodeEditor::~CodeEditor()
@@ -262,7 +282,7 @@ CPPHighLighter::CPPHighLighter(QTextDocument *parent) : QSyntaxHighlighter(paren
                     << "\\bslots\\b" << "\\bstatic\\b" << "\\bstruct\\b"
                     << "\\btemplate\\b" << "\\btypedef\\b" << "\\btypename\\b"
                     << "\\bunion\\b" << "\\bunsigned\\b" << "\\bvirtual\\b"
-                    << "\\bvoid\\b" << "\\bvolatile\\b";
+                    << "\\bvoid\\b" << "\\bvolatile\\b" << "\\bbool\\b";
     foreach(const QString& pattern, keywordPatterns){
         rule.pattern = QRegExp(pattern);
         rule.format = keywordFormat;
@@ -301,7 +321,7 @@ void CPPHighLighter::highlightBlock(const QString &text){
     foreach(const HighlightRule &rule, highlightRules){
         QRegExp expression(rule.pattern);
         int index = expression.indexIn(text);
-        while(index > 0){
+        while(index >= 0){
             int length = expression.matchedLength();
             setFormat(index, length, rule.format);
             index = expression.indexIn(text, index + length);

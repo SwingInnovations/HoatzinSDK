@@ -4,8 +4,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     initGui();
-    editor = new CodeEditor(this);
-    setCentralWidget(editor);
+    mWorkspace = new SW_Workspace(this);
+    setCentralWidget(mWorkspace);
 }
 
 void MainWindow::initGui(){

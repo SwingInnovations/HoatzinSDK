@@ -5,7 +5,7 @@
 #include <QStackedLayout>
 #include <QAction>
 #include <QMenu>
-#include "Widgets/codeeditor.h"
+#include "Widgets/sw_workspace.h"
 
 class MainWindow : public QMainWindow
 {
@@ -16,7 +16,7 @@ public:
     ~MainWindow();
 private:
     void initGui();
-    CodeEditor* editor;
+    SW_Workspace* mWorkspace;
 };
 
 #endif // MAINWINDOW_H

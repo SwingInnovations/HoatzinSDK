@@ -147,11 +147,16 @@ public:
     CodeEditor(QWidget* parent = 0);
     ~CodeEditor();
 signals:
-
+    void singleViewTriggered(int);
+    void splitHorizontalTriggered(int);
+    void splitVerticalTriggered(int);
 private slots:
     void selectCPP(bool);
     void selectLUA(bool);
     void selectGLSL(bool);
+    void singleSelected();
+    void splitHorizSelected();
+    void splitVertiSelected();
 private:
     CodeCanvas* codeCanvas;
     QVector<QString> mFilesOpen;
@@ -172,6 +177,10 @@ private:
     QAction* mSceneViewerWgdt;
     QAction* mTimelineWgdt;
 
+    CPPHighLighter* mCPPHighlighter;
+    LUAHighLighter* mLUAHighlighter;
+    GLSLHighLighter* mGLSLlighter;
+    QSyntaxHighlighter* masterHighlight;
 };
 
 #endif // CODEEDITOR_H
