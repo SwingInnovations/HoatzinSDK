@@ -90,18 +90,24 @@ void CodeEditor::selectCPP(bool val){
     cppLangAct->setChecked(val);
     luaLangAct->setChecked(!val);
     glslLangAct->setChecked(!val);
+    delete masterHighlight;
+    masterHighlight = new CPPHighLighter(codeCanvas->document());
 }
 
 void CodeEditor::selectGLSL(bool val){
     cppLangAct->setChecked(!val);
     luaLangAct->setChecked(!val);
     glslLangAct->setChecked(val);
+    delete masterHighlight;
+    masterHighlight = new GLSLHighLighter(codeCanvas->document());
 }
 
 void CodeEditor::selectLUA(bool val){
     cppLangAct->setChecked(!val);
     luaLangAct->setChecked(val);
     glslLangAct->setChecked(!val);
+    delete masterHighlight;
+    masterHighlight = new LUAHighLighter(codeCanvas->document());
 }
 
 void CodeEditor::singleSelected(){
@@ -282,7 +288,9 @@ CPPHighLighter::CPPHighLighter(QTextDocument *parent) : QSyntaxHighlighter(paren
                     << "\\bslots\\b" << "\\bstatic\\b" << "\\bstruct\\b"
                     << "\\btemplate\\b" << "\\btypedef\\b" << "\\btypename\\b"
                     << "\\bunion\\b" << "\\bunsigned\\b" << "\\bvirtual\\b"
-                    << "\\bvoid\\b" << "\\bvolatile\\b" << "\\bbool\\b";
+                    << "\\bvoid\\b" << "\\bvolatile\\b" << "\\bbool\\b"
+                    <<  "\\bif\\b" << "\\bfor\\b" << "\\bwhile\\b"
+                    << "\\belse\\b" << "\\breturn\\b" << "\\b#include\\b";
     foreach(const QString& pattern, keywordPatterns){
         rule.pattern = QRegExp(pattern);
         rule.format = keywordFormat;
@@ -350,14 +358,56 @@ void CPPHighLighter::highlightBlock(const QString &text){
 
 LUAHighLighter::LUAHighLighter(QTextDocument *parent) : QSyntaxHighlighter(parent)
 {
+    HighlightRule rule;
+    keywordFormat.setForeground(Qt::darkBlue);
+    keywordFormat.setFontWeight(QFont::Bold);
+    QStringList keywordPatterns;
+    keywordPatterns << "\\band\\b" << "\\bbreak\\b" << "\\bdo\\b"
+                    << "\\belse\\b" << "\\belseif\\b" << "\\bend\\b"
+                    << "\\bfalse\\b" << "\\bfor\\b" << "\\bfunction\\b"
+                    << "\\bif\\b" << "\\bin\\b" << "\\blocal\\b"
+                    << "\\bnil\\b" << "\\bnot\\b" << "\\bor\\b"
+                    << "\\brepeat\\b" << "\\breturn\\b" << "\\bthen\\b"
+                    << "\\btrue\\b" << "\\buntil\\b" << "\\bwhile\\b";
+    foreach(const QString& pattern, keywordPatterns){
+        rule.pattern = QRegExp(pattern);
+        rule.format = keywordFormat;
+        highlightRules.append(rule);
+    }
 
+    classFormat.setFontWeight(QFont::Bold);
+    classFormat.setForeground(Qt::darkMagenta);
+    rule.pattern = QRegExp("\\bQ[A-Za-z]+\\b");
+    rule.format = classFormat;
+    highlightRules.append(rule);
+
+    quotationFormat.setForeground(Qt::darkGreen);
+    rule.pattern = QRegExp("\".*\"");
+    rule.format = quotationFormat;
+    highlightRules.append(rule);
+
+   functionFormat.setFontItalic(true);
+   functionFormat.setForeground(Qt::blue);
+   rule.pattern = QRegExp("\\b[A-za-z0-9_]+(?=\\()");
+   rule.format = functionFormat;
+   highlightRules.append(rule);
+
+   singleLineCommentFormat.setForeground(Qt::red);
+   rule.pattern = QRegExp("//[^\n]*");
+   rule.format = singleLineCommentFormat;
+   highlightRules.append(rule);
+
+   multiLineCommentFormat.setForeground(Qt::red);
+
+   commentStartExpression = QRegExp("/\\*");
+   commentEndExpression = QRegExp("\\*/");
 }
 
 void LUAHighLighter::highlightBlock(const QString &text){
     foreach(const HighlightRule &rule, highlightRules){
         QRegExp expression(rule.pattern);
         int index = expression.indexIn(text);
-        while(index > 0){
+        while(index >= 0){
             int length = expression.matchedLength();
             setFormat(index, length, rule.format);
             index = expression.indexIn(text, index + length);
@@ -393,7 +443,7 @@ void GLSLHighLighter::highlightBlock(const QString &text){
     foreach(const HighlightRule &rule, highlightRules){
         QRegExp expression(rule.pattern);
         int index = expression.indexIn(text);
-        while(index > 0){
+        while(index >= 0){
             int length = expression.matchedLength();
             setFormat(index, length, rule.format);
             index = expression.indexIn(text, index + length);
