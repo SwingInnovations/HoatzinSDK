@@ -31,10 +31,13 @@ public:
     ~SW_Workspace();
     void syncCodeEditor(CodeEditor* editor);
     void setWidget(int);
+signals:
+    void singleEmitted();
 public slots:
     void splitHorizView(int);
     void splitVertiView(int);
     void setSingleView(int);
+    void setSingleView(){emit singleEmitted();}
 private:
     SW_ActiveWidget mActiveWidget;
     SW_Split mSplitMode;
