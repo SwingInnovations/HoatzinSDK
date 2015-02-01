@@ -22,6 +22,8 @@ public:
     int getFirstVisibleBlockID();
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     int lineNumberAreaWidth();
+    QMenu* getEditMenu(){return mEditMenu;}
+    QMenu* getLanguageMenu(){return mLanguageMenu;}
 signals:
     void undoTriggered();
     void redoTriggered();
@@ -46,6 +48,8 @@ private slots:
     void updateLineNumberArea();
 private:
     QWidget *lineNumberArea;
+    QMenu* mEditMenu;
+    QMenu* mLanguageMenu;
     QAction *mUndoAct;
     QAction *mRedoAct;
     QAction *mCutAct;
